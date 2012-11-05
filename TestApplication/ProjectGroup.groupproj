@@ -1,0 +1,58 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{ef28cd9e-6ea5-46eb-9d35-d6e5d15c63e9}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Projects Include="..\..\UnitsForDelphi\Units4Delphi.dproj" />
+    <Projects Include="..\LogLibrary4Delphi.dproj">
+      <Dependencies>..\..\UnitsForDelphi\Units4Delphi.dproj</Dependencies>
+    </Projects>
+    <Projects Include="LLTestApplication.dproj">
+      <Dependencies>..\LogLibrary4Delphi.dproj</Dependencies>
+    </Projects>
+  </ItemGroup>
+  <ProjectExtensions>
+    <Borland.Personality>Default.Personality</Borland.Personality>
+    <Borland.ProjectType />
+    <BorlandProject>
+<BorlandProject xmlns=""><Default.Personality></Default.Personality></BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <Target Name="LLTestApplication" DependsOnTargets="LogLibrary4Delphi">
+    <MSBuild Projects="LLTestApplication.dproj" Targets="" />
+  </Target>
+  <Target Name="LLTestApplication:Clean" DependsOnTargets="LogLibrary4Delphi:Clean">
+    <MSBuild Projects="LLTestApplication.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="LLTestApplication:Make" DependsOnTargets="LogLibrary4Delphi:Make">
+    <MSBuild Projects="LLTestApplication.dproj" Targets="Make" />
+  </Target>
+  <Target Name="LogLibrary4Delphi" DependsOnTargets="Units4Delphi">
+    <MSBuild Projects="..\LogLibrary4Delphi.dproj" Targets="" />
+  </Target>
+  <Target Name="LogLibrary4Delphi:Clean" DependsOnTargets="Units4Delphi:Clean">
+    <MSBuild Projects="..\LogLibrary4Delphi.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="LogLibrary4Delphi:Make" DependsOnTargets="Units4Delphi:Make">
+    <MSBuild Projects="..\LogLibrary4Delphi.dproj" Targets="Make" />
+  </Target>
+  <Target Name="Units4Delphi">
+    <MSBuild Projects="..\..\UnitsForDelphi\Units4Delphi.dproj" Targets="" />
+  </Target>
+  <Target Name="Units4Delphi:Clean">
+    <MSBuild Projects="..\..\UnitsForDelphi\Units4Delphi.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="Units4Delphi:Make">
+    <MSBuild Projects="..\..\UnitsForDelphi\Units4Delphi.dproj" Targets="Make" />
+  </Target>
+  <Target Name="Build">
+    <CallTarget Targets="LLTestApplication;LogLibrary4Delphi;Units4Delphi" />
+  </Target>
+  <Target Name="Clean">
+    <CallTarget Targets="LLTestApplication:Clean;LogLibrary4Delphi:Clean;Units4Delphi:Clean" />
+  </Target>
+  <Target Name="Make">
+    <CallTarget Targets="LLTestApplication:Make;LogLibrary4Delphi:Make;Units4Delphi:Make" />
+  </Target>
+  <Import Condition="Exists('$(MSBuildBinPath)\Borland.Group.Targets')" Project="$(MSBuildBinPath)\Borland.Group.Targets" />
+</Project>

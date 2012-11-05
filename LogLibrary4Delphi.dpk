@@ -1,0 +1,57 @@
+package LogLibrary4Delphi;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  Units4Delphi;
+
+contains
+  CustomLogEntity in 'CustomLogEntity.pas',
+  CustomLogManager in 'CustomLogManager.pas',
+  CustomLogMessage in 'CustomLogMessage.pas',
+  CustomLogWriter in 'CustomLogWriter.pas',
+  PlainLogManager in 'PlainLogManager.pas',
+  CustomLogWriterList in 'CustomLogWriterList.pas',
+  CustomLogMessageList in 'CustomLogMessageList.pas',
+  DefaultLogMessage in 'DefaultLogMessage.pas',
+  ConsoleLogWriter in 'ConsoleLogWriter.pas',
+  DefaultLogEntity in 'DefaultLogEntity.pas',
+  EmptyLogEntity in 'EmptyLogEntity.pas',
+  CustomVCLLogPanel in 'CustomVCLLogPanel.pas',
+  VCLLogPanelWriter in 'VCLLogPanelWriter.pas',
+  CustomVCLLogPanelAttachable in 'CustomVCLLogPanelAttachable.pas',
+  VCLLogPanel in 'VCLLogPanel.pas',
+  VCLLogPanelItem in 'VCLLogPanelItem.pas',
+  CustomLogTextFormat in 'CustomLogTextFormat.pas',
+  PlainLogTextFormat in 'PlainLogTextFormat.pas',
+  FileLogWriter in 'FileLogWriter.pas',
+  LogMemoryStorage in 'LogMemoryStorage.pas',
+  ULogFileModels in 'ULogFileModels.pas',
+  VCLLogViewPanel in 'VCLLogViewPanel.pas',
+  VCLLogViewPainter in 'VCLLogViewPainter.pas';
+  FileLogWriter in 'FileLogWriter.pas';
+
+end.
