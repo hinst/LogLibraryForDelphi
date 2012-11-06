@@ -3,12 +3,17 @@ unit LogViewerWindow;
 interface
 
 uses
+  Windows,
+  SysUtils,
   Classes,
   Forms,
-  Controls, 
+  Controls,
 
   LogMemoryStorage,
-  VCLLogViewPanel;
+  VCLLogViewPanel,
+  GlobalLogManagerUnit,
+  DefaultLogEntity,
+  ULogTest;
 
 type
   TLogViewerWindow = class(TForm)
@@ -19,8 +24,10 @@ type
     FLogMemoryStorage: TLogMemoryStorage;
     FLogViewPanel: TLogViewPanel;
     procedure CreateThis;
+    procedure OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure GenerateMessages(const aCount: integer);
   public
-    property LogMemoryStorage: TLogMemoryStorage write FLogMemoryStorage;
+    property LogMemoryStorage: TLogMemoryStorage read FLogMemoryStorage write FLogMemoryStorage;
   end;
 
 
@@ -34,6 +41,8 @@ end;
 procedure TLogViewerWindow.Startup;
 begin
   CreateThis;
+  OnKeyDown := OnKeyDownHandler;
+
 end;
 
 procedure TLogViewerWindow.CreateThis;
@@ -42,6 +51,17 @@ begin
   FLogViewPanel.Parent := self;
   FLogViewPanel.Align := alClient;
   FLogViewPanel.Storage := FLogMemoryStorage;
+end;
+
+procedure TLogViewerWindow.OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_F1 then
+    GenerateMessages(1000);
+end;
+
+procedure TLogViewerWindow.GenerateMessages(const aCount: integer);
+begin
+  GenerateLogMessages(GlobalLogManager, 3, 5, aCount, 30);  
 end;
 
 end.

@@ -13,7 +13,7 @@ uses
 var
   LogMan: TCustomLogManager;
   ConsoleLW: TCustomLogWriter;
-  log: TCustomLogEntity;
+  log: TLog;
 
 
 begin

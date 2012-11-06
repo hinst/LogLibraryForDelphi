@@ -51,7 +51,9 @@ contains
   LogMemoryStorage in 'LogMemoryStorage.pas',
   ULogFileModels in 'ULogFileModels.pas',
   VCLLogViewPanel in 'VCLLogViewPanel.pas',
-  VCLLogViewPainter in 'VCLLogViewPainter.pas';
-  FileLogWriter in 'FileLogWriter.pas';
+  VCLLogViewPainter in 'VCLLogViewPainter.pas',
+  ULogTest in 'ULogTest.pas';
+
+FileLogWriter in 'FileLogWriter.pas';
 
 end.
