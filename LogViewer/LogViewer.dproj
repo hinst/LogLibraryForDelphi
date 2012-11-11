@@ -1,4 +1,5 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>{5d51a4f9-00e3-4302-8701-4347abda327e}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -16,7 +17,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
-    <DCC_Define>DEBUG</DCC_Define>
+    <DCC_Define>DEBUG;madExcept</DCC_Define>
     <DCC_UnitSearchPath>$(HDELPHIUNITSLIBRARY);$(HDELPHILOGLIBRARY)</DCC_UnitSearchPath>
     <DCC_ResourcePath>$(HDELPHIUNITSLIBRARY);$(HDELPHILOGLIBRARY)</DCC_ResourcePath>
     <DCC_ObjPath>$(HDELPHIUNITSLIBRARY);$(HDELPHILOGLIBRARY)</DCC_ObjPath>

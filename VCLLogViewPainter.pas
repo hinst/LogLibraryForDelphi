@@ -14,6 +14,10 @@ type
     procedure Draw(const aMessage: TCustomLogMessage);
   end;
 
+  TLogMessageTextBoxPaintAdvanced = class(TLogMessageTextBoxPaint)
+  public
+  end;
+
 implementation
 
 procedure TLogMessageTextBoxPaint.Draw(const aMessage: TCustomLogMessage);

@@ -12,6 +12,7 @@ uses
   LogMemoryStorage,
   VCLLogViewPanel,
   GlobalLogManagerUnit,
+  EmptyLogEntity,
   DefaultLogEntity,
   ULogTest;
 
@@ -21,13 +22,15 @@ type
     constructor Create(aOwner: TComponent); override;
     procedure Startup;
   protected
-    FLogMemoryStorage: TLogMemoryStorage;
-    FLogViewPanel: TLogViewPanel;
+    FLog: TEmptyLog;
+    FLogMemory: TLogMemoryStorage;
+    FLogPanel: TLogViewPanel;
     procedure CreateThis;
     procedure OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure GenerateMessages(const aCount: integer);
   public
-    property LogMemoryStorage: TLogMemoryStorage read FLogMemoryStorage write FLogMemoryStorage;
+    property LogMemory: TLogMemoryStorage read FLogMemory write FLogMemory;
+    destructor Destroy; override;
   end;
 
 
@@ -36,32 +39,38 @@ implementation
 constructor TLogViewerWindow.Create(aOwner: TComponent);
 begin
   inherited CreateNew(aOwner);
+  FLog := TLog.Create(GlobalLogManager, 'LogViewerWindow');
 end;
 
 procedure TLogViewerWindow.Startup;
 begin
   CreateThis;
   OnKeyDown := OnKeyDownHandler;
-
 end;
 
 procedure TLogViewerWindow.CreateThis;
 begin
-  FLogViewPanel := TLogViewPanel.Create(self);
-  FLogViewPanel.Parent := self;
-  FLogViewPanel.Align := alClient;
-  FLogViewPanel.Storage := FLogMemoryStorage;
+  FLogPanel := TLogViewPanel.Create(self);
+  FLogPanel.Parent := self;
+  FLogPanel.Align := alClient;
+  FLogPanel.Storage := FLogMemory;
 end;
 
 procedure TLogViewerWindow.OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if Key = VK_F1 then
-    GenerateMessages(1000);
+    GenerateMessages(1549);
 end;
 
 procedure TLogViewerWindow.GenerateMessages(const aCount: integer);
 begin
-  GenerateLogMessages(GlobalLogManager, 3, 5, aCount, 30);  
+  GenerateLogMessages(GlobalLogManager, 3, 5, aCount, 30);
+end;
+
+destructor TLogViewerWindow.Destroy;
+begin
+  FreeAndNil(FLog);
+  inherited Destroy;
 end;
 
 end.

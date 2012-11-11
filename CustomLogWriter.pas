@@ -12,6 +12,8 @@ type
     procedure Write(const aMessage: TCustomLogMessage); virtual; abstract;
   end;
 
+  TCustomLogWriterClass = class of TCustomLogWriter;
+
 implementation
 
 end.

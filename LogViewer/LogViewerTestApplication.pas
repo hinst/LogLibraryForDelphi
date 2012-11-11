@@ -26,6 +26,7 @@ type
     LogFileCount = 10;
   protected
     FLog: TEmptyLog;
+    FLogMemory: TLogMemoryStorage;
     FMainWindow: TLogViewerWindow;
     procedure StartupLog;
     procedure StartupConsoleLog;
@@ -47,8 +48,8 @@ begin
   GlobalLogManager := TPlainLogManager.Create;
   StartupConsoleLog;
   FLog := TLog.Create(GlobalLogManager, 'Application');
-  StartupFileLog;
   StartupLogMemoryStorage;
+  StartupFileLog;
 end;
 
 procedure TLVTApplication.StartupConsoleLog;
@@ -69,14 +70,19 @@ procedure TLVTApplication.StartupLogMemoryStorage;
 var
   w: TLogMemoryStorage;
 begin
+  if Assigned(Log) then
+    Log.Write('Now starting log memory storage...');
   w := TLogMemoryStorage.Create;
   GlobalLogManager.AddWriter(w);
+  FLogMemory := w;
 end;
 
 procedure TLVTApplication.StartupVCLApplication;
 begin
   Application.CreateForm(TLogViewerWindow, FMainWindow);
   PlaceFormDesktopPart(FMainWindow, 0.7);
+  FMainWindow.LogMemory := FLogMemory;
+  FMainWindow.Startup;
   Application.Run;
 end;
 

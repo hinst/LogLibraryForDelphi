@@ -20,6 +20,7 @@ type
   public
       // lock the list while using|iterating it.
     property List: TCustomLogMessageList read FList;
+      // TCustomLogWriter essential method
     procedure Write(const aMessage: TCustomLogMessage); override;
     destructor Destroy; override;
   end;

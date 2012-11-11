@@ -32,12 +32,17 @@ begin
   SetLength(logs, aLogCount);
   for i := 0 to aLogCount - 1 do
     logs[i] := TLog.Create(aLogManager, 'Log' + IntToStr(i));
+  SetLength(tags, aTagCount);
+  for i := 0 to aTagCount - 1 do
+    tags[i] := 'Tag' + chr(ord('A') + i);
   for i := 0 to aCount - 1 do
   begin
     currentLog := logs[random(aLogCount)];
     currentTag := tags[random(aTagCount)];
+    if random(3) = 0 then
+      currentTag := currentTag + ' ' + tags[random(aTagCount)];
     text := GenerateRandomText(aWordsPerMessage);
-    currentLog.Write(currentTag, '');
+    currentLog.Write(currentTag, text);
   end;
 end;
 

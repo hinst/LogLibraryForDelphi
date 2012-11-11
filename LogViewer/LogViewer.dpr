@@ -3,6 +3,11 @@ program LogViewer;
 {$APPTYPE CONSOLE}
 
 uses
+  madExcept,
+  madLinkDisAsm,
+  madListHardware,
+  madListProcesses,
+  madListModules,
   SysUtils,
   CustomLogMessageList,
   LogViewerTestApplication in 'LogViewerTestApplication.pas',
