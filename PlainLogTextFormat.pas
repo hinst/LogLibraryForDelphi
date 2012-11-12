@@ -7,6 +7,7 @@ uses
   StrUtils,
 
   UEnhancedObject,
+  UTextUtilities,
 
   CustomLogMessage,
   CustomLogTextFormat;
@@ -22,6 +23,7 @@ type
       const aReplaceWord, aFormat: string);
     procedure PutThis(var s: string; const aReplaceWord, aThis: string);
   public const
+    NUMBER_HERE = '%NUMBER%';
     DATE_HERE = '%DATE%';
     TIME_HERE = '%TIME%';
     NAME_HERE = '%NAME%';
@@ -59,6 +61,7 @@ end;
 function TPlainLogTextFormat.Format(const aMessage: TCustomLogMessage): string;
 begin
   result := FormatString;
+  PutThis(result, NUMBER_HERE, IntToZero(aMessage.Number, 10));
   PutDateTime(result, aMessage, DATE_HERE, DateFormat);
   PutDateTime(result, aMessage, TIME_HERE, TimeFormat);
   PutThis(result, TAG_HERE, aMessage.Tag);
@@ -77,7 +80,7 @@ end;
 class function TPlainLogTextFormat.CreateShort: TPlainLogTextFormat;
 begin
   result := TPlainLogTextFormat.Create;
-  result.FormatString := '[%TAG%] %NAME%: %TEXT%';
+  result.FormatString := '%NUMBER% [%TAG%] %NAME%: %TEXT%';
 end;
 
 end.

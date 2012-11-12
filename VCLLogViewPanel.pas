@@ -3,6 +3,7 @@ unit VCLLogViewPanel;
 interface
 
 uses
+  Types,
   SysUtils,
   Classes,
   Graphics,
@@ -36,7 +37,6 @@ type
     DefaultBackgroundColor = clWhite;
   protected
     FLog: TEmptyLog;
-    FScrollPosition: single; // 0..1
     FDesiredScrollPosition: single;
     FStorage: TLogMemoryStorage;
     FReverse: boolean;
@@ -48,14 +48,20 @@ type
     FTimer: TTimer;
     FPainter: TLogMessageTextBoxPaint;
     FExceptionWhileDrawing: boolean;
+    function GetScrollPosition: single;
+    procedure SetScrollPosition(const aValue: single);
     procedure CreateThis;
     procedure UpdateLogMessagesImage(aSender: TObject);
     procedure OnPaintBoxHandler(aSender: TObject);
     procedure PaintBackground;
     procedure PaintMessages;
+    procedure PaintIndicator;
   public
     property Log: TEmptyLog read FLog;
     property Storage: TLogMemoryStorage read FStorage write FStorage;
+    property ScrollPosition: single read GetScrollPosition write SetScrollPosition;
+    function ReceiveMouseWheel(aShift: TShiftState; aWheelDelta: Integer; aMousePos: TPoint)
+      : boolean;
     destructor Destroy; override;
   end;
 
@@ -65,6 +71,31 @@ constructor TLogViewPanel.Create(aOwner: TComponent);
 begin
   inherited Create(aOwner);
   CreateThis;
+end;
+
+function TLogViewPanel.GetScrollPosition: single;
+var
+  effectiveHeight: integer;
+begin
+  effectiveHeight := FPainter.TotalHeight - Height;
+  if effectiveheight = 0 then
+    effectiveHeight := 1;
+  result := abs(FPainter.Top) / effectiveHeight;
+  if result < 0 then
+    result := 0;
+  if result > 1 then
+    result := 1;
+end;
+
+procedure TLogViewPanel.SetScrollPosition(const aValue: single);
+var
+  value: single;
+begin
+  value := aValue;
+  if value < 0 then
+    value := 0;
+  if value > 1 then
+    value := 1;
 end;
 
 procedure TLogViewPanel.CreateThis;
@@ -108,6 +139,7 @@ begin
   try
     PaintBackground;
     PaintMessages;
+    PaintIndicator;
   except
     on e: Exception do
     begin
@@ -134,19 +166,30 @@ begin
   AssertAssigned(Storage, 'Storage', TVariableType.Prop);
   AssertAssigned(Storage.List, 'Storage.List', TVariableType.Prop);
   LockPointer(Storage.List);
-  FPainter.Top := 0;
-  FPainter.TotalHeight := 0;
-  for i := 0 to Storage.List.Count - 1 do
-  begin
-    if (FPainter.Top + FPainter.TotalHeight < ClientHeight) then
-    begin
-      currentMessage := Storage.List[i];
-      FPainter.Draw(currentMessage);
-    end;
-    if FPainter.IsBottomOfPaintBoxReached then
-      break;
-  end;
+  FPainter.DrawList(Storage.List);
   UnlockPointer(Storage.List);
+end;
+
+procedure TLogViewPanel.PaintIndicator;
+var
+  lineLength: integer;
+begin
+  WriteLN(FloatToStr(ScrollPosition) + '%');
+  lineLength := round( ( - 1 + FPaintBox.Height - 1 ) * ScrollPosition );
+  FPaintBox.Canvas.Pen.Style := psSolid;
+  FPaintBox.Canvas.Pen.Color := clBlack;
+  FPaintBox.Canvas.MoveTo(FPaintBox.Width - 1, 1);
+  FPaintBox.Canvas.LineTo(FPaintBox.Width - 1, lineLength);
+end;
+
+function TLogViewPanel.ReceiveMouseWheel(aShift: TShiftState; aWheelDelta: Integer;
+ aMousePos: TPoint): boolean;
+begin
+  result := true;
+  // inherited DoMouseWheel(aShift, aWheelDelta, aMousePos);
+  // Log.Write(IntToStr(aWheelDelta)); // debug
+  FPainter.Top := FPainter.Top + aWheelDelta;
+  FPaintBox.Invalidate;
 end;
 
 destructor TLogViewPanel.Destroy;
@@ -155,5 +198,6 @@ begin
   FreeAndNil(FLog);
   inherited Destroy;
 end;
+
 
 end.

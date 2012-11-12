@@ -9,6 +9,9 @@ uses
   Forms,
   Controls,
 
+  UAdditionalTypes,
+  UAdditionalExceptions,
+
   LogMemoryStorage,
   VCLLogViewPanel,
   GlobalLogManagerUnit,
@@ -27,7 +30,10 @@ type
     FLogPanel: TLogViewPanel;
     procedure CreateThis;
     procedure OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure OnMouseWheelHandler(Sender: TObject);
     procedure GenerateMessages(const aCount: integer);
+    function DoMouseWheel(aShift: TShiftState; aWheelDelta: Integer; aMousePos: TPoint): boolean;
+      override;
   public
     property LogMemory: TLogMemoryStorage read FLogMemory write FLogMemory;
     destructor Destroy; override;
@@ -60,6 +66,13 @@ procedure TLogViewerWindow.OnKeyDownHandler(Sender: TObject; var Key: Word; Shif
 begin
   if Key = VK_F1 then
     GenerateMessages(1549);
+  if Key = VK_F2 then
+    GenerateMessages(49);
+end;
+
+procedure TLogViewerWindow.OnMouseWheelHandler(Sender: TObject);
+begin
+
 end;
 
 procedure TLogViewerWindow.GenerateMessages(const aCount: integer);
@@ -71,6 +84,15 @@ destructor TLogViewerWindow.Destroy;
 begin
   FreeAndNil(FLog);
   inherited Destroy;
+end;
+
+function TLogViewerWindow.DoMouseWheel(aShift: TShiftState; aWheelDelta: Integer;
+  aMousePos: TPoint): boolean;
+begin
+  result := true;
+  //inherited DoMouseWheel(aShift, aWheelDelta, aMousePos);
+  AssertAssigned(FLogPanel, 'FLogPanel', TVariableType.Field);  
+  FLogPanel.ReceiveMouseWheel(aShift, aWheelDelta, aMousePos);
 end;
 
 end.
