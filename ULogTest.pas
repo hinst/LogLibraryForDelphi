@@ -44,6 +44,8 @@ begin
     text := GenerateRandomText(aWordsPerMessage);
     currentLog.Write(currentTag, text);
   end;
+  for i := 0 to aLogCount - 1 do
+    logs[i].Free;
 end;
 
 end.

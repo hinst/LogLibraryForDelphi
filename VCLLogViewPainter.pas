@@ -6,6 +6,8 @@ uses
   SysUtils,
   Graphics,
 
+  UMath,
+
   CustomLogMessage,
   CustomLogMessageList,
   CustomLogMessageFilter,
@@ -21,8 +23,11 @@ type
     procedure SetTop(const aTop: integer); override;
     function EmptyFilter(const aMessage: TCustomLogMessage): boolean;
     function GetFilter: TCustomLogMessageFilterMethod;
+    function GetMessageListStartIndex(const aList: TCustomLogMessageList): integer;
+    function GetMessageListLastIndex(const aList: TCustomLogMessageList): integer;
   public
     property Filter: TCustomLogMessageFilterMethod read GetFilter write FFilter;
+    property PageSize: integer read FPageSize write FPageSize;
     property Page: integer read FPage write FPage;
     property TotalHeight: integer read FTotalHeight;
     procedure Draw(const aMessage: TCustomLogMessage); overload;
@@ -58,16 +63,38 @@ begin
     result := EmptyFilter;
 end;
 
+function TLogMessageTextBoxPaint.GetMessageListStartIndex(const aList: TCustomLogMessageList)
+  : integer;
+begin
+  result := Page * PageSize;
+  if result < 0 then
+    result := 0;
+  if result > aList.Count - 1 then // exceeds
+    result := aList.Count; // does not exists
+end;
+
+function TLogMessageTextBoxPaint.GetMessageListLastIndex(const aList: TCustomLogMessageList)
+  : integer;
+begin
+  result := (Page + 1) * PageSize;
+  if result < 0 then
+    result := 0;
+  if result > aList.Count - 1 then // exceeds
+    result := aList.Count - 1; // exists
+end;
+
 procedure TLogMessageTextBoxPaint.Draw(const aMessage: TCustomLogMessage);
 begin
   CurrentHeight := CurrentHeight + InnerTextGap;
-  AppendDraw(IntToStr(aMessage.Number), clRed);
-  AppendDraw(aMessage.Name, clGreen);
-  AppendDraw(aMessage.Tag, clBlue);
+  AppendDraw(
+    '#' + IntToStr(aMessage.Number) + ' "' + aMessage.Name + '" [' + aMessage.Tag + ']',
+    clBlue
+  );
   if AppendDraw(aMessage.Text, clBlack) then
   begin
     FBox.Canvas.Pen.Style := psSolid;
     FBox.Canvas.Pen.Color := clBlack;
+    FBox.Canvas.Pen.Width := 1;
     FBox.Canvas.MoveTo(LeftGap, Top + CurrentHeight);
     FBox.Canvas.LineTo(FBox.Width - RightGap, Top + CurrentHeight );
   end;
@@ -83,10 +110,15 @@ var
     Draw(m);
   end;
   {$ENDREGION}
+var
+  startIndex, lastIndex: integer;
 begin
   FCurrentHeight := 0;
   FTotalHeight := 0;
-  for i := 0 to aList.Count - 1 do
+  startIndex := GetMessageListStartIndex(aList);
+  lastIndex := GetMessageListLastIndex(aList);
+  WriteLN(startIndex, ' ', lastIndex);
+  for i := startIndex to lastIndex do
   begin
     m := aList[i];
     if filter(m) then

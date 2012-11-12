@@ -30,7 +30,6 @@ type
     FLogPanel: TLogViewPanel;
     procedure CreateThis;
     procedure OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
-    procedure OnMouseWheelHandler(Sender: TObject);
     procedure GenerateMessages(const aCount: integer);
     function DoMouseWheel(aShift: TShiftState; aWheelDelta: Integer; aMousePos: TPoint): boolean;
       override;
@@ -68,11 +67,6 @@ begin
     GenerateMessages(1549);
   if Key = VK_F2 then
     GenerateMessages(49);
-end;
-
-procedure TLogViewerWindow.OnMouseWheelHandler(Sender: TObject);
-begin
-
 end;
 
 procedure TLogViewerWindow.GenerateMessages(const aCount: integer);
