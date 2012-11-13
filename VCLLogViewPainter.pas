@@ -1,10 +1,19 @@
 unit VCLLogViewPainter;
 
+{ $DEFINE DEBUG_WRITELN_REDRAW_PERFORMANCE}
+
 interface
 
 uses
+  Windows,
+  Types,
   SysUtils,
   Graphics,
+  Controls,
+  ExtCtrls,
+
+  JCLCounter,
+  JCLSortedMaps,
 
   UMath,
   ULockThis,
@@ -18,6 +27,8 @@ uses
 
 type
   TLogMessageTextBoxPaint = class(TTextBoxPainter)
+  public
+    constructor Create;
   protected
     FList: TCustomLogMessageList;
     FFilter: TCustomLogMessageFilterMethod;
@@ -25,6 +36,8 @@ type
     FPage: integer;
     FTotalHeight: integer;
     FMessageCount: integer;
+    FReverse: boolean;
+    FMessageHeightCache: TJclPtrPtrSortedMap;
     procedure SetTop(const aTop: integer); override;
     function EmptyFilter(const aMessage: TCustomLogMessage): boolean;
     function GetFilter: TCustomLogMessageFilterMethod;
@@ -39,12 +52,22 @@ type
     property Page: integer read FPage write SetPage;
     property PageCount: integer read GetPageCount;
     property TotalHeight: integer read FTotalHeight;
+    property Reverse: boolean read FReverse write FReverse;
+    function CheckPageIndex(const aPage: integer): boolean;
     procedure Draw(const aMessage: TCustomLogMessage); overload;
     procedure DrawList; overload;
+    procedure UpdateMessageCount; inline;
+    destructor Destroy; override;
   end;
 
 
 implementation
+
+constructor TLogMessageTextBoxPaint.Create;
+begin
+  inherited Create;
+  FMessageHeightCache := TJclPtrPtrSortedMap.Create(0);
+end;
 
 procedure TLogMessageTextBoxPaint.SetTop(const aTop: integer);
 begin
@@ -70,15 +93,20 @@ end;
 
 procedure TLogMessageTextBoxPaint.SetPage(const aPage: integer);
 begin
+  if not CheckPageIndex(aPage) then
+    exit;
   if aPage > Page then
     Top := 0;
   if aPage < Page then
     Top := - TotalHeight + FBox.Height;
+  FPage := aPage;
 end;
 
 function TLogMessageTextBoxPaint.GetMessageListStartIndex: integer;
 begin
   result := Page * PageSize;
+  if Reverse then
+    result := List.Count - 1 - result;
   if result < 0 then
     result := 0;
   AssertAssigned(List, 'List', TVariableType.Prop);
@@ -91,6 +119,8 @@ end;
 function TLogMessageTextBoxPaint.GetMessageListLastIndex: integer;
 begin
   result := (Page + 1) * PageSize;
+  if Reverse then
+    result := List.Count - 1 - result;  
   if result < 0 then
     result := 0;
   AssertAssigned(List, 'List', TVariableType.Prop);
@@ -108,7 +138,14 @@ begin
     result := FMessageCount div PageSize + 1;
 end;
 
+function TLogMessageTextBoxPaint.CheckPageIndex(const aPage: integer): boolean;
+begin
+  result := (0 <= aPage) and (aPage < PageCount);
+end;
+
 procedure TLogMessageTextBoxPaint.Draw(const aMessage: TCustomLogMessage);
+var
+  canv: TCanvas;
 begin
   CurrentHeight := CurrentHeight + InnerTextGap;
   AppendDraw(
@@ -117,11 +154,12 @@ begin
   );
   if AppendDraw(aMessage.Text, clBlack) then
   begin
-    FBox.Canvas.Pen.Style := psSolid;
-    FBox.Canvas.Pen.Color := clBlack;
-    FBox.Canvas.Pen.Width := 1;
-    FBox.Canvas.MoveTo(LeftGap, Top + CurrentHeight);
-    FBox.Canvas.LineTo(FBox.Width - RightGap, Top + CurrentHeight );
+    canv := FBox.Canvas;
+    canv.Pen.Style := psSolid;
+    canv.Pen.Color := clBlack;
+    canv.Pen.Width := 1;
+    canv.MoveTo(LeftGap, Top + CurrentHeight);
+    canv.LineTo(FBox.Width - RightGap, Top + CurrentHeight );
   end;
 end;
 
@@ -130,32 +168,66 @@ var
   i: integer;
   m: TCustomLogMessage;
   {$REGION Local PROCEDURE}
-  procedure DrawMessage;
+  procedure CycleMessage;
   begin
-    Draw(m);
+    m := List[i];
+    if Filter(m) then
+      Draw(m);
   end;
   {$ENDREGION}
 var
   startIndex, lastIndex: integer;
+  {$IFDEF DEBUG_WRITELN_REDRAW_PERFORMANCE}
+    stopWatch: TJclCounter;
+  {$ENDIF}
 begin
+  {$IFDEF DEBUG_WRITELN_REDRAW_PERFORMANCE}
+    StartCount(stopWatch);
+  {$ENDIF}
   FCurrentHeight := 0;
   FTotalHeight := 0;
-  FMessageCount := 0;
   startIndex := GetMessageListStartIndex;
   lastIndex := GetMessageListLastIndex;
   AssertAssigned(List, 'List', TVariableType.Prop);
   LockPointer(List);
-  for i := startIndex to lastIndex do
-  begin
-    m := List[i];
-    if filter(m) then
-    begin
-      DrawMessage;
-      FMessageCount := FMessageCount + 1;
-    end;
-  end;
+  if Reverse
+  then
+    for i := startIndex downto lastIndex do
+      CycleMessage
+  else
+    for i := startIndex to lastIndex do
+      CycleMessage;
   UnlockPointer(List);
   FTotalHeight := CurrentHeight;
+  {$IFDEF DEBUG_WRITELN_REDRAW_PERFORMANCE}
+    WriteLN(FormatFloat(',0.000000', StopCount(stopWatch)));
+  {$ENDIF}
+end;
+
+procedure TLogMessageTextBoxPaint.UpdateMessageCount;
+var
+  i: integer;
+begin
+  LockPointer(List);
+  FMessageCount := 0;
+  for i := 0 to List.Count - 1 do
+    if Filter(List[i]) then
+      FMessageCount := FMessageCount + 1;
+  UnlockPointer(List);  
+end;
+
+destructor TLogMessageTextBoxPaint.Destroy;
+begin
+  FreeAndNil(FMessageHeightCache);
+  inherited Destroy;
 end;
 
 end.
+
+
+
+
+
+
+
+

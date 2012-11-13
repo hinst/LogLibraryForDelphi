@@ -11,6 +11,7 @@ uses
 
   UAdditionalTypes,
   UAdditionalExceptions,
+  UVCL,
 
   LogMemoryStorage,
   VCLLogViewPanel,
@@ -86,10 +87,13 @@ end;
 function TLogViewerWindow.DoMouseWheel(aShift: TShiftState; aWheelDelta: Integer;
   aMousePos: TPoint): boolean;
 begin
-  result := true;
+  result := IsMouseOverControl(FLogPanel.PaintBox);
   //inherited DoMouseWheel(aShift, aWheelDelta, aMousePos);
-  AssertAssigned(FLogPanel, 'FLogPanel', TVariableType.Field);  
-  FLogPanel.ReceiveMouseWheel(aShift, aWheelDelta, aMousePos);
+  if result then
+  begin
+    AssertAssigned(FLogPanel, 'FLogPanel', TVariableType.Field);
+    FLogPanel.ReceiveMouseWheel(aShift, aWheelDelta, aMousePos);
+  end;
 end;
 
 end.

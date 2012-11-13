@@ -19,6 +19,8 @@ uses
   UPaintEx,
 
   CustomLogMessage,
+  CustomLogMessageList,
+  CustomLogMessageFilter,
   DefaultLogEntity,
   EmptyLogEntity,
   LogMemoryStorage,
@@ -31,7 +33,7 @@ type
   public
     constructor Create(aOwner: TComponent); override;
   public const
-    DefaultUpdateInterval = 50;
+    DefaultUpdateInterval = 1000;
     DefaultPageSize = 100;
     DefaultBottomPanelHeight = 30;
     DefaultLeftGap = 2;
@@ -39,6 +41,7 @@ type
     DefaultInnerTextGap = 2;
     DefaultBackgroundColor = clWhite;
     DefaultScrollLineWidth = 3;
+    DefaultReverseViewCaption = 'Reverse view';
   protected
     FLog: TEmptyLog;
     FDesiredScrollPosition: single;
@@ -50,6 +53,8 @@ type
     FBottomPanel: TPanel;
     FPageSwitcher: TUpDown;
     FPageBox: TComboBox;
+    FReverseSwitch: TCheckBox;
+    FSearchField: TEdit;
     {$ENDREGION}
     FTimer: TTimer;
     FPainter: TLogMessageTextBoxPaint;
@@ -62,17 +67,20 @@ type
     procedure CreateThis;
     procedure UpdateLogMessagesImage(aSender: TObject);
     procedure OnPaintBoxHandler(aSender: TObject);
-    procedure PaintBackground;
-    procedure PaintMessages;
-    procedure UpdatePageControls;
-    procedure PaintScrollLine;
-    procedure PaintPageControl;
+    procedure PaintBackground; inline;
+    procedure PaintMessages; inline;
+    procedure UpdatePageControls; inline;
+    procedure PaintScrollLine; inline;
     procedure OnPageSwitchHandler(aSender: TObject; var aAllowChange: Boolean; aNewValue: SmallInt;
       aDirection: TUpDownDirection);
+    procedure OnPageBoxChange(aSender: TObject);
+    procedure OnReverseSwitchChangeHandler(aSender: TObject);
     procedure UserChangePage(const aPage: integer);
+    procedure Resize; override;
   public
     property Log: TEmptyLog read FLog;
     property Storage: TLogMemoryStorage read FStorage write FStorage;
+    property PaintBox: TPaintBox read FPaintBox write FPaintBox;
     property ScrollPosition: single read GetScrollPosition write SetScrollPosition;
     property ScrollLinePosition: integer read GetScrollLinePosition;
     procedure Startup;
@@ -135,17 +143,36 @@ begin
   FBottomPanel.Align := alBottom;
   FBottomPanel.Height := DefaultBottomPanelHeight;
 
+  FSearchField := TEdit.Create(FBottomPanel);
+  FSearchField.Parent := FBottomPanel;
+  FSearchField.Align := alRight;
+  FSearchField.AlignWithMargins := true;
+
+  FReverseSwitch := TCheckBox.Create(FBottomPanel);
+  FReverseSwitch.Parent := FBottomPanel;
+  FReverseSwitch.Align := alLeft;
+  FReverseSwitch.AlignWithMargins := true;
+  FReverseSwitch.Margins.Top := (FBottomPanel.ClientHeight - FReverseSwitch.Height) div 2;
+  FReverseSwitch.OnClick:= OnReverseSwitchChangeHandler;
+  FReverseSwitch.Caption := DefaultReverseViewCaption;
+
   FPageBox := TComboBox.Create(FBottomPanel);
   FPageBox.Parent := FBottomPanel;
   FPageBox.Align := alLeft;
   FPageBox.Style := csDropDown;
   FPageBox.AlignWithMargins := true;
-  FPageBox.Margins.Top := (FBottomPanel.ClientHeight - FPageBox.ClientHeight) div 2;
+  FPageBox.Margins.Top := (FBottomPanel.ClientHeight - FPageBox.Height) div 2;
+  FPageBox.OnChange := OnPageBoxChange;
 
   FPageSwitcher := TUpDown.Create(FBottomPanel);
   FPageSwitcher.Parent := FBottomPanel;
   FPageSwitcher.Align := alLeft;
+  FPageSwitcher.AlignWithMargins := true;
   FPageSwitcher.OnChangingEx := OnPageSwitchHandler;
+
+  FSearchField.Width := FBottomPanel.ClientWidth
+    - FSearchField.Margins.Left - FSearchField.Margins.Right
+     - FReverseSwitch.Left - FReverseSwitch.Width;
 
   FTimer := TTimer.Create(self);
   FTimer.Interval := DefaultUpdateInterval;
@@ -166,8 +193,14 @@ procedure TLogViewPanel.UpdateLogMessagesImage(aSender: TObject);
 var
   invalidateRequired: boolean;
 begin
+  invalidateRequired := false;
   LockPointer(Storage.List);
-  invalidateRequired := FLastTimeMessageCount <> Storage.List.Count;
+  if FLastTimeMessageCount <> Storage.List.Count then
+  begin
+    FLastTimeMessageCount := Storage.List.Count;
+    FPainter.UpdateMessageCount;
+    invalidateRequired := true;
+  end;
   UnlockPointer(Storage.List);
   if invalidateRequired then
   begin
@@ -183,6 +216,7 @@ begin
   try
     PaintBackground;
     PaintMessages;
+    UpdatePageControls;
     PaintScrollLine;
   except
     on e: Exception do
@@ -195,11 +229,14 @@ begin
 end;
 
 procedure TLogViewPanel.PaintBackground;
+var
+  canv: TCanvas;
 begin
-  FPaintBox.Canvas.Brush.Color := DefaultBackgroundColor;
-  FPaintBox.Canvas.Brush.Style := bsSolid;
-  FPaintBox.Canvas.Pen.Style := psClear;
-  FPaintBox.Canvas.Rectangle(FPaintBox.ClientRect);
+  canv := FPaintBox.Canvas;
+  canv.Brush.Color := DefaultBackgroundColor;
+  canv.Brush.Style := bsSolid;
+  canv.Pen.Style := psClear;
+  canv.Rectangle(FPaintBox.ClientRect);
 end;
 
 procedure TLogViewPanel.PaintMessages;
@@ -207,8 +244,6 @@ begin
   AssertAssigned(Storage, 'Storage', TVariableType.Prop);
   AssertAssigned(Storage.List, 'Storage.List', TVariableType.Prop);
   FPainter.DrawList;
-  FLastTimeMessageCount := Storage.List.Count;
-  UpdatePageControls;
 end;
 
 procedure TLogViewPanel.UpdatePageControls;
@@ -225,40 +260,56 @@ begin
     FPageBox.Items.EndUpdate;
     FPageBox.ItemIndex := FPainter.Page;
   end;
-  
-  FPageSwitcher.Min := 0;
-  FPageSwitcher.Max := n;
 end;
 
 procedure TLogViewPanel.PaintScrollLine;
 var
   lineLength: integer;
+  canv: TCanvas;
 begin
   //WriteLN(FloatToStr(ScrollPosition) + '%');
   lineLength := round( ( - 1 + FPaintBox.Height - 1 ) * ScrollPosition );
-  FPaintBox.Canvas.Pen.Style := psSolid;
-  FPaintBox.Canvas.Pen.Color := clBlack;
-  FPaintBox.Canvas.Pen.Width := DefaultScrollLineWidth;
-  FPaintBox.Canvas.MoveTo(ScrollLinePosition, 1);
-  FPaintBox.Canvas.LineTo(ScrollLinePosition, lineLength);
-end;
-
-procedure TLogViewPanel.PaintPageControl;
-begin
-
+  canv := FPaintBox.Canvas;
+  canv.Pen.Style := psSolid;
+  canv.Pen.Color := clBlack;
+  canv.Pen.Width := DefaultScrollLineWidth;
+  canv.MoveTo(ScrollLinePosition, 1);
+  canv.LineTo(ScrollLinePosition, lineLength);
 end;
 
 procedure TLogViewPanel.OnPageSwitchHandler(aSender: TObject; var aAllowChange: Boolean;
   aNewValue: SmallInt; aDirection: TUpDownDirection);
 begin
-  aAllowChange := (0 <= aNewValue) and (aNewValue <= FPageBox.Items.Count);
+  aAllowChange := FPainter.CheckPageIndex(aNewValue);
   if aAllowChange then
+  begin
     FPageBox.ItemIndex := aNewValue;
+    UserChangePage(aNewValue);
+  end;
+end;
+
+procedure TLogViewPanel.OnPageBoxChange(aSender: TObject);
+begin
+  FPageSwitcher.Position := FPageBox.ItemIndex;
+end;
+
+procedure TLogViewPanel.OnReverseSwitchChangeHandler(aSender: TObject);
+begin
+  FPainter.Reverse := FReverseSwitch.Checked;
+  FPaintBox.Invalidate;
 end;
 
 procedure TLogViewPanel.UserChangePage(const aPage: integer);
 begin
   FPainter.Page := aPage;
+  FPaintBox.Invalidate;
+end;
+
+procedure TLogViewPanel.Resize;
+begin
+  inherited Resize;
+  if Assigned(FPainter) then
+    FPainter.Cache.Clear;
 end;
 
 procedure TLogViewPanel.Startup;
