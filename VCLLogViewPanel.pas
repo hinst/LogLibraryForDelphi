@@ -9,6 +9,8 @@ uses
   Graphics,
   Controls,
   ExtCtrls,
+  ComCtrls,
+  StdCtrls,
 
   ULockThis,
   UExceptionTracer,
@@ -31,7 +33,7 @@ type
   public const
     DefaultUpdateInterval = 50;
     DefaultPageSize = 100;
-    DefaultBottomPanelHeight = 64;
+    DefaultBottomPanelHeight = 30;
     DefaultLeftGap = 2;
     DefaultRightGap = 8;
     DefaultInnerTextGap = 2;
@@ -46,6 +48,8 @@ type
     {$REGION Visual items}
     FPaintBox: TPaintBox;
     FBottomPanel: TPanel;
+    FPageSwitcher: TUpDown;
+    FPageBox: TComboBox;
     {$ENDREGION}
     FTimer: TTimer;
     FPainter: TLogMessageTextBoxPaint;
@@ -60,13 +64,18 @@ type
     procedure OnPaintBoxHandler(aSender: TObject);
     procedure PaintBackground;
     procedure PaintMessages;
+    procedure UpdatePageControls;
     procedure PaintScrollLine;
     procedure PaintPageControl;
+    procedure OnPageSwitchHandler(aSender: TObject; var aAllowChange: Boolean; aNewValue: SmallInt;
+      aDirection: TUpDownDirection);
+    procedure UserChangePage(const aPage: integer);
   public
     property Log: TEmptyLog read FLog;
     property Storage: TLogMemoryStorage read FStorage write FStorage;
     property ScrollPosition: single read GetScrollPosition write SetScrollPosition;
     property ScrollLinePosition: integer read GetScrollLinePosition;
+    procedure Startup;
     function ReceiveMouseWheel(aShift: TShiftState; aWheelDelta: Integer; aMousePos: TPoint)
       : boolean;
     destructor Destroy; override;
@@ -77,15 +86,10 @@ implementation
 constructor TLogViewPanel.Create(aOwner: TComponent);
 begin
   inherited Create(aOwner);
-  CreateThis;
 end;
 
 function TLogViewPanel.GetScrollPosition: single;
-var
-  effectiveHeight: integer;
 begin
-  if effectiveheight = 0 then
-    effectiveHeight := 1;
   result := abs(FPainter.Top) / GetEffectiveHeight;
   if result < 0 then
     result := 0;
@@ -131,11 +135,24 @@ begin
   FBottomPanel.Align := alBottom;
   FBottomPanel.Height := DefaultBottomPanelHeight;
 
+  FPageBox := TComboBox.Create(FBottomPanel);
+  FPageBox.Parent := FBottomPanel;
+  FPageBox.Align := alLeft;
+  FPageBox.Style := csDropDown;
+  FPageBox.AlignWithMargins := true;
+  FPageBox.Margins.Top := (FBottomPanel.ClientHeight - FPageBox.ClientHeight) div 2;
+
+  FPageSwitcher := TUpDown.Create(FBottomPanel);
+  FPageSwitcher.Parent := FBottomPanel;
+  FPageSwitcher.Align := alLeft;
+  FPageSwitcher.OnChangingEx := OnPageSwitchHandler;
+
   FTimer := TTimer.Create(self);
   FTimer.Interval := DefaultUpdateInterval;
   FTimer.OnTimer := UpdateLogMessagesImage;
 
   FPainter := TLogMessageTextBoxPaint.Create;
+  FPainter.List := Storage.List;
   FPainter.LeftGap := DefaultLeftGap;
   FPainter.RightGap := DefaultRightGap;
   FPainter.InnerTextGap := DefaultInnerTextGap;
@@ -147,12 +164,12 @@ end;
 
 procedure TLogViewPanel.UpdateLogMessagesImage(aSender: TObject);
 var
-  currentMessageCount: integer;
+  invalidateRequired: boolean;
 begin
   LockPointer(Storage.List);
-  currentMessageCount := Storage.List.Count;
+  invalidateRequired := FLastTimeMessageCount <> Storage.List.Count;
   UnlockPointer(Storage.List);
-  if FLastTimeMessageCount <> currentMessageCount then
+  if invalidateRequired then
   begin
     FPaintBox.Invalidate;
     FTimer.Interval := FTimer.Interval;
@@ -189,10 +206,28 @@ procedure TLogViewPanel.PaintMessages;
 begin
   AssertAssigned(Storage, 'Storage', TVariableType.Prop);
   AssertAssigned(Storage.List, 'Storage.List', TVariableType.Prop);
-  LockPointer(Storage.List);
-  FPainter.DrawList(Storage.List);
+  FPainter.DrawList;
   FLastTimeMessageCount := Storage.List.Count;
-  UnlockPointer(Storage.List);
+  UpdatePageControls;
+end;
+
+procedure TLogViewPanel.UpdatePageControls;
+var
+  i, n: integer;
+begin
+  n := FPainter.PageCount;
+  if FPageBox.Items.Count < n then
+  begin
+    FPageBox.Items.BeginUpdate;
+    FPageBox.Items.Clear;
+    for i := 0 to n - 1 do
+      FPageBox.Items.Add(IntToStr(i));
+    FPageBox.Items.EndUpdate;
+    FPageBox.ItemIndex := FPainter.Page;
+  end;
+  
+  FPageSwitcher.Min := 0;
+  FPageSwitcher.Max := n;
 end;
 
 procedure TLogViewPanel.PaintScrollLine;
@@ -211,6 +246,24 @@ end;
 procedure TLogViewPanel.PaintPageControl;
 begin
 
+end;
+
+procedure TLogViewPanel.OnPageSwitchHandler(aSender: TObject; var aAllowChange: Boolean;
+  aNewValue: SmallInt; aDirection: TUpDownDirection);
+begin
+  aAllowChange := (0 <= aNewValue) and (aNewValue <= FPageBox.Items.Count);
+  if aAllowChange then
+    FPageBox.ItemIndex := aNewValue;
+end;
+
+procedure TLogViewPanel.UserChangePage(const aPage: integer);
+begin
+  FPainter.Page := aPage;
+end;
+
+procedure TLogViewPanel.Startup;
+begin
+  CreateThis;
 end;
 
 function TLogViewPanel.ReceiveMouseWheel(aShift: TShiftState; aWheelDelta: Integer;

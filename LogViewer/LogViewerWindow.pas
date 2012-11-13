@@ -50,7 +50,6 @@ end;
 procedure TLogViewerWindow.Startup;
 begin
   CreateThis;
-  OnKeyDown := OnKeyDownHandler;
 end;
 
 procedure TLogViewerWindow.CreateThis;
@@ -59,6 +58,10 @@ begin
   FLogPanel.Parent := self;
   FLogPanel.Align := alClient;
   FLogPanel.Storage := FLogMemory;
+  FLogPanel.Startup;
+  
+  OnKeyDown := OnKeyDownHandler;
+  KeyPreview := true;
 end;
 
 procedure TLogViewerWindow.OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);

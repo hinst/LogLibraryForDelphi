@@ -17,7 +17,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
-    <DCC_Define>DEBUG;madExcept</DCC_Define>
+    <DCC_Define>DEBUG;madExcept;LeakChecking</DCC_Define>
     <DCC_UnitSearchPath>$(HDELPHIUNITSLIBRARY);$(HDELPHILOGLIBRARY)</DCC_UnitSearchPath>
     <DCC_ResourcePath>$(HDELPHIUNITSLIBRARY);$(HDELPHILOGLIBRARY)</DCC_ResourcePath>
     <DCC_ObjPath>$(HDELPHIUNITSLIBRARY);$(HDELPHILOGLIBRARY)</DCC_ObjPath>
