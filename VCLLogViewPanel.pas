@@ -60,6 +60,7 @@ type
     FPainter: TLogMessageTextBoxPaint;
     FExceptionWhileDrawing: boolean;
     FLastTimeMessageCount: integer;
+    FFilter: TLogMessageTextFilter;
     function GetScrollPosition: single;
     procedure SetScrollPosition(const aValue: single);
     function GetScrollLinePosition: integer;
@@ -75,12 +76,15 @@ type
       aDirection: TUpDownDirection);
     procedure OnPageBoxChange(aSender: TObject);
     procedure OnReverseSwitchChangeHandler(aSender: TObject);
+    procedure OnSearchFieldKeyPress(aSender: TObject; var aKey: Char);
     procedure UserChangePage(const aPage: integer);
+    procedure UserApplyFilter(const aText: string);
     procedure Resize; override;
   public
     property Log: TEmptyLog read FLog;
     property Storage: TLogMemoryStorage read FStorage write FStorage;
     property PaintBox: TPaintBox read FPaintBox write FPaintBox;
+    property Filter: TLogMessageTextFilter read FFilter write FFilter;
     property ScrollPosition: single read GetScrollPosition write SetScrollPosition;
     property ScrollLinePosition: integer read GetScrollLinePosition;
     procedure Startup;
@@ -147,6 +151,7 @@ begin
   FSearchField.Parent := FBottomPanel;
   FSearchField.Align := alRight;
   FSearchField.AlignWithMargins := true;
+  FSearchField.OnKeyPress := OnSearchFieldKeyPress; 
 
   FReverseSwitch := TCheckBox.Create(FBottomPanel);
   FReverseSwitch.Parent := FBottomPanel;
@@ -170,9 +175,10 @@ begin
   FPageSwitcher.AlignWithMargins := true;
   FPageSwitcher.OnChangingEx := OnPageSwitchHandler;
 
-  FSearchField.Width := FBottomPanel.ClientWidth
+  FSearchField.Width :=
+    FBottomPanel.ClientWidth
     - FSearchField.Margins.Left - FSearchField.Margins.Right
-     - FReverseSwitch.Left - FReverseSwitch.Width;
+    - FReverseSwitch.Left - FReverseSwitch.Width;
 
   FTimer := TTimer.Create(self);
   FTimer.Interval := DefaultUpdateInterval;
@@ -187,6 +193,8 @@ begin
   FPainter.PageSize := DefaultPageSize;
 
   FExceptionWhileDrawing := false;
+
+  FFilter := TLogMessageTextFilter.Create;
 end;
 
 procedure TLogViewPanel.UpdateLogMessagesImage(aSender: TObject);
@@ -299,10 +307,23 @@ begin
   FPaintBox.Invalidate;
 end;
 
+procedure TLogViewPanel.OnSearchFieldKeyPress(aSender: TObject; var aKey: Char);
+begin
+  if aKey = #13 then
+    UserApplyFilter(FSearchField.Text);
+end;
+
 procedure TLogViewPanel.UserChangePage(const aPage: integer);
 begin
   FPainter.Page := aPage;
   FPaintBox.Invalidate;
+end;
+
+procedure TLogViewPanel.UserApplyFilter(const aText: string);
+begin
+  WriteLN('Applying filter "' + aText + '"');
+  Filter.FilterText := aText;
+  FPainter.Filter := nil;
 end;
 
 procedure TLogViewPanel.Resize;
@@ -329,6 +350,7 @@ end;
 
 destructor TLogViewPanel.Destroy;
 begin
+  FreeAndNil(FFilter);
   FreeAndNil(FPainter);
   FreeAndNil(FLog);
   inherited Destroy;
