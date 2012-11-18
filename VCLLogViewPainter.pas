@@ -36,7 +36,6 @@ type
     FPage: integer;
     FTotalHeight: integer;
     FReverse: boolean;
-    FMessageHeightCache: TJclPtrPtrSortedMap;
     procedure SetList(const aList: TCustomLogMessageList);
     procedure SetTop(const aTop: integer); override;
     function EmptyFilter(const aMessage: TCustomLogMessage): boolean;
@@ -51,12 +50,14 @@ type
     property Filter: TCustomLogMessageFilterMethod read GetFilter write FFilter;
     property PageSize: integer read FPageSize write FPageSize;
     property Page: integer read FPage write SetPage;
+    property MessageListStartIndex: integer read GetMessageListStartIndex;
+    property MessageListLastIndex: integer read GetMessageListLastIndex;
     property PageCount: integer read GetPageCount;
     property TotalHeight: integer read FTotalHeight;
     property Reverse: boolean read FReverse write FReverse;
     function CheckPageIndex(const aPage: integer): boolean;
-    procedure Draw(const aMessage: TCustomLogMessage); overload;
-    procedure DrawList; overload;
+    procedure Draw(const aMessage: TCustomLogMessage; const aDraw: boolean = true);
+    procedure DrawList(const aDraw: boolean = true); overload;
     destructor Destroy; override;
   end;
 
@@ -66,7 +67,6 @@ implementation
 constructor TLogMessageTextBoxPaint.Create;
 begin
   inherited Create;
-  FMessageHeightCache := TJclPtrPtrSortedMap.Create(0);
 end;
 
 procedure TLogMessageTextBoxPaint.SetList(const aList: TCustomLogMessageList);
@@ -74,16 +74,13 @@ begin
   if FList <> nil then
     FreeAndNil(FList);
   FList := aList;
-  Page := 0;
 end;
 
 procedure TLogMessageTextBoxPaint.SetTop(const aTop: integer);
 begin
   FTop := aTop;
   if FTop < - TotalHeight + FBox.Height then
-  begin
     FTop := - TotalHeight + FBox.Height;
-  end;
   inherited SetTop(FTop);
 end;
 
@@ -100,14 +97,20 @@ begin
 end;
 
 procedure TLogMessageTextBoxPaint.SetPage(const aPage: integer);
+var
+  oldPage: integer;
 begin
   if not CheckPageIndex(aPage) then
     exit;
-  if aPage > Page then
-    Top := 0;
-  if aPage < Page then
-    Top := - TotalHeight + FBox.Height;
+  oldPage := Page;
   FPage := aPage;
+  if aPage > oldPage then
+    Top := 0;
+  if aPage < oldPage then
+  begin
+    DrawList(false);
+    Top := - TotalHeight + FBox.Height;
+  end;
 end;
 
 function TLogMessageTextBoxPaint.GetMessageListStartIndex: integer;
@@ -151,16 +154,24 @@ begin
   result := (0 <= aPage) and (aPage < PageCount);
 end;
 
-procedure TLogMessageTextBoxPaint.Draw(const aMessage: TCustomLogMessage);
+procedure TLogMessageTextBoxPaint.Draw(const aMessage: TCustomLogMessage;
+  const aDraw: boolean);
 var
   canv: TCanvas;
+  bottomestVisible: boolean;
 begin
   CurrentHeight := CurrentHeight + InnerTextGap;
   AppendDraw(
     '#' + IntToStr(aMessage.Number) + ' "' + aMessage.Name + '" [' + aMessage.Tag + ']',
-    clBlue
+    clBlue,
+    aDraw
   );
-  if AppendDraw(aMessage.Text, clBlack) then
+  bottomestVisible := AppendDraw(
+    aMessage.Text,
+    clBlack,
+    aDraw
+  );
+  if bottomestVisible and aDraw then
   begin
     canv := FBox.Canvas;
     canv.Pen.Style := psSolid;
@@ -171,7 +182,7 @@ begin
   end;
 end;
 
-procedure TLogMessageTextBoxPaint.DrawList;
+procedure TLogMessageTextBoxPaint.DrawList(const aDraw: boolean = true);
 var
   i: integer;
   m: TCustomLogMessage;
@@ -180,7 +191,7 @@ var
   begin
     m := List[i];
     if Filter(m) then
-      Draw(m);
+      Draw(m, aDraw);
   end;
   {$ENDREGION}
 var
@@ -194,10 +205,9 @@ begin
   {$ENDIF}
   FCurrentHeight := 0;
   FTotalHeight := 0;
-  startIndex := GetMessageListStartIndex;
-  lastIndex := GetMessageListLastIndex;
+  startIndex := MessageListStartIndex;
+  lastIndex := MessageListLastIndex;
   AssertAssigned(List, 'List', TVariableType.Prop);
-  LockPointer(List);
   if Reverse
   then
     for i := startIndex downto lastIndex do
@@ -205,7 +215,6 @@ begin
   else
     for i := startIndex to lastIndex do
       CycleMessage;
-  UnlockPointer(List);
   FTotalHeight := CurrentHeight;
   {$IFDEF DEBUG_WRITELN_REDRAW_PERFORMANCE}
     WriteLN(FormatFloat(',0.000000', StopCount(stopWatch)));
@@ -215,7 +224,6 @@ end;
 destructor TLogMessageTextBoxPaint.Destroy;
 begin
   FreeAndNil(FList);
-  FreeAndNil(FMessageHeightCache);
   inherited Destroy;
 end;
 

@@ -1,4 +1,4 @@
-unit CustomLogMessageFilter;
+﻿unit CustomLogMessageFilter;
 
 interface
 
@@ -7,8 +7,11 @@ uses
   Classes,
   StrUtils,
 
+  JclArrayLists,
+
   UAdditionalTypes,
   UAdditionalExceptions,
+  UTextUtilities,
 
   CustomLogMessage;
 
@@ -27,6 +30,8 @@ type
     procedure SetFilterText(const aFilterText: string);
     function ContainsRequired(const aText: string): boolean;
     function ContainsNegative(const aText: string): boolean;
+    function CheckExtractNegative(var aString: string): boolean;
+    procedure ExtractFirstPhaseWords(const aFilterText: string);
     procedure ExtractNegative;
   public
     property FilterText: string write SetFilterText;
@@ -47,8 +52,7 @@ end;
 
 procedure TLogMessageTextFilter.SetFilterText(const aFilterText: string);
 begin
-  Clear;
-  FRequired.DelimitedText := aFilterText;
+  ExtractFirstPhaseWords(aFilterText);
   ExtractNegative;
 end;
 
@@ -57,10 +61,12 @@ var
   i: integer;
 begin
   result := true;
+  // если хотя бы одни не содержит, то ответ отрицательный и прервать цикл
   for i := 0 to FRequired.Count - 1 do
-    if Pos(FRequired[i], aText) <= 0 then
+    if not ContainsText(aText, FRequired[i]) then
     begin
       result := false;
+      WriteLN(aText, ', ', FRequired[i], ', ', result);
       break;
     end;
 end;
@@ -70,24 +76,34 @@ var
   i: integer;
 begin
   result := false;
+  // если хотя бы один содержит запрещённый, то ответ положительный и прервать цикл
   for i := 0 to FNegative.Count - 1 do
-    if Pos(FNegative[i], aText) > 0 then
+    if ContainsText(aText, FNegative[i]) then
     begin
       result := true;
       break;
     end;
 end;
 
+function TLogMessageTextFilter.CheckExtractNegative(var aString: string): boolean;
+begin
+  result := StartsText(NegativeChar, aString);
+  if result then
+    Delete(aString, 1, 1);  
+end;
+
+procedure TLogMessageTextFilter.ExtractFirstPhaseWords(const aFilterText: string);
+begin
+  FRequired.Clear;
+  FRequired.DelimitedText := aFilterText;
+end;
+
 procedure TLogMessageTextFilter.ExtractNegative;
 var
   i: integer;
 begin
-  for i := 0 to FRequired.Count - 1 do
-    if StartsText(NegativeChar, FRequired[i]) then
-    begin
-      FNegative.Add(FRequired[i]);
-      FRequired.Delete(i);
-    end;
+  FreeAndNil(FNegative);
+  FNegative := CreateExtractStrings(FRequired, CheckExtractNegative);
 end;
 
 function TLogMessageTextFilter.Filter(const aMessage: TCustomLogMessage): boolean;

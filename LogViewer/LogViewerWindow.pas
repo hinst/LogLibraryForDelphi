@@ -55,6 +55,7 @@ end;
 
 procedure TLogViewerWindow.CreateThis;
 begin
+  DoubleBuffered := true;
   FLogPanel := TLogViewPanel.Create(self);
   FLogPanel.Parent := self;
   FLogPanel.Align := alClient;

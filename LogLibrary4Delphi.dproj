@@ -42,8 +42,6 @@
     <DelphiCompile Include="LogLibrary4Delphi.dpk">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="$(SystemRoot)\system32\rtl.dcp" />
-    <DCCReference Include="$(SystemRoot)\system32\Units4Delphi.dcp" />
     <DCCReference Include="ConsoleLogWriter.pas" />
     <DCCReference Include="CustomLogEntity.pas" />
     <DCCReference Include="CustomLogManager.pas" />
@@ -60,12 +58,13 @@
     <DCCReference Include="EmptyLogEntity.pas" />
     <DCCReference Include="FileLogWriter.pas" />
     <DCCReference Include="LogMemoryStorage.pas" />
+    <DCCReference Include="LogViewer\rtl.dcp" />
+    <DCCReference Include="LogViewer\Units4Delphi.dcp" />
     <DCCReference Include="PlainLogManager.pas" />
     <DCCReference Include="PlainLogTextFormat.pas" />
     <DCCReference Include="UCustomLogMessageListFilter.pas" />
     <DCCReference Include="ULogFileModels.pas" />
     <DCCReference Include="ULogTest.pas" />
-    <DCCReference Include="VCLLogPanel.pas" />
     <DCCReference Include="VCLLogPanelItem.pas" />
     <DCCReference Include="VCLLogPanelWriter.pas" />
     <DCCReference Include="VCLLogViewPainter.pas" />

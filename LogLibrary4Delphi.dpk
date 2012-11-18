@@ -43,7 +43,6 @@ contains
   CustomVCLLogPanel in 'CustomVCLLogPanel.pas',
   VCLLogPanelWriter in 'VCLLogPanelWriter.pas',
   CustomVCLLogPanelAttachable in 'CustomVCLLogPanelAttachable.pas',
-  VCLLogPanel in 'VCLLogPanel.pas',
   VCLLogPanelItem in 'VCLLogPanelItem.pas',
   CustomLogTextFormat in 'CustomLogTextFormat.pas',
   PlainLogTextFormat in 'PlainLogTextFormat.pas',
