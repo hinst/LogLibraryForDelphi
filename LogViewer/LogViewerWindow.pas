@@ -74,7 +74,7 @@ begin
 end;
 
 procedure TLogViewerWindow.GenerateMessages(const aCount: integer);
-begin
+begin                    
   GenerateLogMessages(GlobalLogManager, 3, 5, aCount, 30);
 end;
 

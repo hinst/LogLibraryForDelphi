@@ -21,6 +21,7 @@ uses
   CustomLogMessage,
   CustomLogMessageList,
   CustomLogMessageFilter,
+  UCustomLogMessageListFilter,
   DefaultLogEntity,
   EmptyLogEntity,
   LogMemoryStorage,
@@ -61,12 +62,13 @@ type
     FExceptionWhileDrawing: boolean;
     FLastTimeMessageCount: integer;
     FFilter: TLogMessageTextFilter;
+    function GetUserLogMessageList: TCustomLogMessageList;
     function GetScrollPosition: single;
     procedure SetScrollPosition(const aValue: single);
     function GetScrollLinePosition: integer;
     function GetEffectiveHeight: integer;
     procedure CreateThis;
-    procedure UpdateLogMessagesImage(aSender: TObject);
+    procedure PanelUpdateCycle(aSender: TObject);
     procedure OnPaintBoxHandler(aSender: TObject);
     procedure PaintBackground; inline;
     procedure PaintMessages; inline;
@@ -79,10 +81,12 @@ type
     procedure OnSearchFieldKeyPress(aSender: TObject; var aKey: Char);
     procedure UserChangePage(const aPage: integer);
     procedure UserApplyFilter(const aText: string);
+    procedure UpdateAddLogMessages(var aInvalidateRequired: boolean);
     procedure Resize; override;
   public
     property Log: TEmptyLog read FLog;
     property Storage: TLogMemoryStorage read FStorage write FStorage;
+    property UserLogMessageList: TCustomLogMessageList read GetUserLogMessageList;
     property PaintBox: TPaintBox read FPaintBox write FPaintBox;
     property Filter: TLogMessageTextFilter read FFilter write FFilter;
     property ScrollPosition: single read GetScrollPosition write SetScrollPosition;
@@ -98,6 +102,19 @@ implementation
 constructor TLogViewPanel.Create(aOwner: TComponent);
 begin
   inherited Create(aOwner);
+end;
+
+function TLogViewPanel.GetUserLogMessageList: TCustomLogMessageList;
+begin
+  result := nil;
+  AssertAssigned(Storage, 'Storage', TVariableType.Prop);
+  try
+    Storage.Lock;
+    AssertAssigned(Storage.List,' Storage.List', TVariableType.Prop);
+    result := CreateFiltered(FFilter.Filter, Storage.List);
+  finally
+    Storage.Unlock;
+  end;
 end;
 
 function TLogViewPanel.GetScrollPosition: single;
@@ -118,6 +135,7 @@ begin
     value := 0;
   if value > 1 then
     value := 1;
+  // not implemented
 end;
 
 function TLogViewPanel.GetScrollLinePosition: integer;
@@ -182,10 +200,11 @@ begin
 
   FTimer := TTimer.Create(self);
   FTimer.Interval := DefaultUpdateInterval;
-  FTimer.OnTimer := UpdateLogMessagesImage;
+  FTimer.OnTimer := PanelUpdateCycle;
 
+  FFilter := TLogMessageTextFilter.Create;
   FPainter := TLogMessageTextBoxPaint.Create;
-  FPainter.List := Storage.List;
+  FPainter.List := UserLogMessageList;
   FPainter.LeftGap := DefaultLeftGap;
   FPainter.RightGap := DefaultRightGap;
   FPainter.InnerTextGap := DefaultInnerTextGap;
@@ -193,23 +212,15 @@ begin
   FPainter.PageSize := DefaultPageSize;
 
   FExceptionWhileDrawing := false;
-
-  FFilter := TLogMessageTextFilter.Create;
 end;
 
-procedure TLogViewPanel.UpdateLogMessagesImage(aSender: TObject);
+procedure TLogViewPanel.PanelUpdateCycle(aSender: TObject);
 var
   invalidateRequired: boolean;
+  count: integer;
 begin
   invalidateRequired := false;
-  LockPointer(Storage.List);
-  if FLastTimeMessageCount <> Storage.List.Count then
-  begin
-    FLastTimeMessageCount := Storage.List.Count;
-    FPainter.UpdateMessageCount;
-    invalidateRequired := true;
-  end;
-  UnlockPointer(Storage.List);
+  UpdateAddLogMessages;
   if invalidateRequired then
   begin
     FPaintBox.Invalidate;
@@ -250,7 +261,9 @@ end;
 procedure TLogViewPanel.PaintMessages;
 begin
   AssertAssigned(Storage, 'Storage', TVariableType.Prop);
+  LockPointer(Storage.List);
   AssertAssigned(Storage.List, 'Storage.List', TVariableType.Prop);
+  UnlockPointer(Storage.List);
   FPainter.DrawList;
 end;
 
@@ -258,6 +271,7 @@ procedure TLogViewPanel.UpdatePageControls;
 var
   i, n: integer;
 begin
+  FPageBox.ItemIndex := FPainter.Page;
   n := FPainter.PageCount;
   if FPageBox.Items.Count < n then
   begin
@@ -323,7 +337,35 @@ procedure TLogViewPanel.UserApplyFilter(const aText: string);
 begin
   WriteLN('Applying filter "' + aText + '"');
   Filter.FilterText := aText;
-  FPainter.Filter := nil;
+  FPainter.List := UserLogMessageList;
+  WriteLN(FPainter.List.Count);
+  FPaintBox.Invalidate;
+end;
+
+procedure TLogViewPanel.UpdateAddLogMessages(var aInvalidateRequired: boolean);
+var
+  count: integer;
+  i: integer;
+  m: TCustomLogMessage;
+begin
+  AssertAssigned(Storage, 'Storage', TVariableType.Prop);
+  count := Storage.Count;
+  if FLastTimeMessageCount <> count then
+  begin
+    aInvalidateRequired := true;
+    FLastTimeMessageCount := count;
+    Storage.Lock;
+    AssertAssigned(Storage.List, 'Storage.List', TVariableType.Prop);
+    Storage.Unlock;
+  end;
+  LockPointer(Storage.List);
+  for i := FLastTimeMessageCount - 1 to Storage.List.Count - 1 do
+  begin
+    m := Storage.List[i];
+    if Filter.Filter(m) then
+      FPainter.List.Add(m);
+  end;
+  UnlockPointer(Storage.List);
 end;
 
 procedure TLogViewPanel.Resize;

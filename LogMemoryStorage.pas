@@ -15,13 +15,20 @@ type
   TLogMemoryStorage = class(TCustomLogWriter)
   public
     constructor Create;
-  private
+  protected
     FList: TCustomLogMessageList;
+    function GetLockedCount: integer;
   public
       // lock the list while using|iterating it.
     property List: TCustomLogMessageList read FList;
       // TCustomLogWriter essential method
+    procedure Lock;
     procedure Write(const aMessage: TCustomLogMessage); override;
+    procedure Unlock;
+      // Notes:
+      // Count: locked count
+      // List.Count: unlocked count
+    property Count: integer read GetLockedCount;
     destructor Destroy; override;
   end;
 
@@ -33,17 +40,34 @@ begin
   FList := TCustomLogMessageList.Create; 
 end;
 
-destructor TLogMemoryStorage.Destroy;
+function TLogMemoryStorage.GetLockedCount: integer;
 begin
-  FreeAndNil(FList);
-  inherited Destroy;
+  Lock;
+  result := FList.Count;
+  Unlock;
+end;
+
+procedure TLogMemoryStorage.Lock;
+begin
+  LockPointer(FList);
 end;
 
 procedure TLogMemoryStorage.Write(const aMessage: TCustomLogMessage);
 begin
-  LockPointer(FList);
+  Lock;
   FList.Add(aMessage);
+  Unlock;
+end;
+
+procedure TLogMemoryStorage.Unlock;
+begin
   UnlockPointer(FList);
+end;
+
+destructor TLogMemoryStorage.Destroy;
+begin
+  FreeAndNil(FList);
+  inherited Destroy;
 end;
 
 end.

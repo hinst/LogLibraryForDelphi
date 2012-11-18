@@ -35,9 +35,9 @@ type
     FPageSize: integer;
     FPage: integer;
     FTotalHeight: integer;
-    FMessageCount: integer;
     FReverse: boolean;
     FMessageHeightCache: TJclPtrPtrSortedMap;
+    procedure SetList(const aList: TCustomLogMessageList);
     procedure SetTop(const aTop: integer); override;
     function EmptyFilter(const aMessage: TCustomLogMessage): boolean;
     function GetFilter: TCustomLogMessageFilterMethod;
@@ -46,7 +46,8 @@ type
     function GetMessageListLastIndex: integer;
     function GetPageCount: integer;
   public
-    property List: TCustomLogMessageList read FList write FList;
+      // owns the list
+    property List: TCustomLogMessageList read FList write SetList;
     property Filter: TCustomLogMessageFilterMethod read GetFilter write FFilter;
     property PageSize: integer read FPageSize write FPageSize;
     property Page: integer read FPage write SetPage;
@@ -56,7 +57,6 @@ type
     function CheckPageIndex(const aPage: integer): boolean;
     procedure Draw(const aMessage: TCustomLogMessage); overload;
     procedure DrawList; overload;
-    procedure UpdateMessageCount; inline;
     destructor Destroy; override;
   end;
 
@@ -67,6 +67,14 @@ constructor TLogMessageTextBoxPaint.Create;
 begin
   inherited Create;
   FMessageHeightCache := TJclPtrPtrSortedMap.Create(0);
+end;
+
+procedure TLogMessageTextBoxPaint.SetList(const aList: TCustomLogMessageList);
+begin
+  if FList <> nil then
+    FreeAndNil(FList);
+  FList := aList;
+  Page := 0;
 end;
 
 procedure TLogMessageTextBoxPaint.SetTop(const aTop: integer);
@@ -135,7 +143,7 @@ begin
   if PageSize = 0 then
     result := 0
   else
-    result := FMessageCount div PageSize + 1;
+    result := List.Count div PageSize + 1;
 end;
 
 function TLogMessageTextBoxPaint.CheckPageIndex(const aPage: integer): boolean;
@@ -204,20 +212,9 @@ begin
   {$ENDIF}
 end;
 
-procedure TLogMessageTextBoxPaint.UpdateMessageCount;
-var
-  i: integer;
-begin
-  LockPointer(List);
-  FMessageCount := 0;
-  for i := 0 to List.Count - 1 do
-    if Filter(List[i]) then
-      FMessageCount := FMessageCount + 1;
-  UnlockPointer(List);  
-end;
-
 destructor TLogMessageTextBoxPaint.Destroy;
 begin
+  FreeAndNil(FList);
   FreeAndNil(FMessageHeightCache);
   inherited Destroy;
 end;

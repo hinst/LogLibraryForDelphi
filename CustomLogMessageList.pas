@@ -6,6 +6,7 @@ uses
   Classes,
   Contnrs,
 
+  UEnhancedObject,
   UAdditionalTypes,
   UAdditionalExceptions,
 
