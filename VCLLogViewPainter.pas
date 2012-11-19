@@ -37,7 +37,7 @@ type
     FTotalHeight: integer;
     FReverse: boolean;
     procedure SetList(const aList: TCustomLogMessageList);
-    procedure SetTop(const aTop: integer); override;
+    function EnsureValidateTop(const aTop: integer): integer; override;
     function EmptyFilter(const aMessage: TCustomLogMessage): boolean;
     function GetFilter: TCustomLogMessageFilterMethod;
     procedure SetPage(const aPage: integer);
@@ -76,12 +76,11 @@ begin
   FList := aList;
 end;
 
-procedure TLogMessageTextBoxPaint.SetTop(const aTop: integer);
+function TLogMessageTextBoxPaint.EnsureValidateTop(const aTop: integer): integer;
 begin
-  FTop := aTop;
-  if FTop < - TotalHeight + FBox.Height then
-    FTop := - TotalHeight + FBox.Height;
-  inherited SetTop(FTop);
+  result := inherited EnsureValidateTop(aTop);
+  if result < - TotalHeight + FBox.Height then
+    result := - TotalHeight + FBox.Height;
 end;
 
 function TLogMessageTextBoxPaint.EmptyFilter(const aMessage: TCustomLogMessage): boolean;

@@ -37,7 +37,7 @@ type
   public
     constructor Create(aOwner: TComponent); override;
   public const
-    DefaultUpdateInterval = 1000;
+    DefaultUpdateInterval = 90;
     DefaultPageSize = 100;
     DefaultBottomPanelHeight = 32;
     DefaultLeftGap = 2;
@@ -310,6 +310,8 @@ begin
       Log.Write('ERROR', 'Exception while updating' + sLineBreak + GetExceptionInfo(e));
     end;
   end;
+  invalidateRequired := invalidateRequired or
+    FPainter.Update(FTimer.Interval);
   if invalidateRequired then
     FPaintBox.Invalidate;
   FTimer.Interval := FTimer.Interval;
@@ -394,7 +396,8 @@ var
   x, y: integer;
 begin
   text := 
-    ' ' + IntToStr(FPainter.MessageListStartIndex) + '..' + IntToStr(FPainter.MessageListLastIndex)
+    ' ' + IntToStr(FPainter.MessageListStartIndex + 1)
+    + '..' + IntToStr(FPainter.MessageListLastIndex + 1)
     + ' / ' + IntToStr(FPainter.List.Count);
   canvas := FPaintBox.Canvas;
   canvas.Font.Color := clBlack;
@@ -442,6 +445,7 @@ end;
 
 procedure TLogViewPanel.UserChangePage(const aPage: integer);
 begin
+  PaintBackground;
   FPainter.Page := aPage;
   FPaintBox.Invalidate;
 end;
@@ -501,7 +505,7 @@ begin
   result := true;
   // inherited DoMouseWheel(aShift, aWheelDelta, aMousePos);
   // Log.Write(IntToStr(aWheelDelta)); // debug
-  FPainter.Top := FPainter.Top + aWheelDelta;
+  FPainter.DesiredTop := FPainter.DesiredTop + aWheelDelta;
   FPaintBox.Invalidate;
 end;
 
