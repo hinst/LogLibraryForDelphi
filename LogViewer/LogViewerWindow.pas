@@ -29,7 +29,6 @@ type
     FLog: TEmptyLog;
     FLogMemory: TLogMemoryStorage;
     FLogPanel: TLogViewPanel;
-    procedure CreateThis;
     procedure OnKeyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure GenerateMessages(const aCount: integer);
     function DoMouseWheel(aShift: TShiftState; aWheelDelta: Integer; aMousePos: TPoint): boolean;
@@ -50,16 +49,11 @@ end;
 
 procedure TLogViewerWindow.Startup;
 begin
-  CreateThis;
-end;
-
-procedure TLogViewerWindow.CreateThis;
-begin
   DoubleBuffered := true;
   FLogPanel := TLogViewPanel.Create(self);
   FLogPanel.Parent := self;
   FLogPanel.Align := alClient;
-  FLogPanel.Storage := FLogMemory;
+  FLogPanel.LogMemory := FLogMemory;
   FLogPanel.Startup;
   
   OnKeyDown := OnKeyDownHandler;

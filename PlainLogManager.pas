@@ -66,8 +66,8 @@ var
   i: integer;
 begin
   LockPointer(@FMessageNumber); // Lock FMessageNumber
-    aMessage.Number := FMessageNumber;
     inc(FMessageNumber);
+    aMessage.Number := FMessageNumber;
   UnlockPointer(@FMessageNumber); // Unlock FMessageNumber
 
   LockPointer(Writers); // Lock Writers

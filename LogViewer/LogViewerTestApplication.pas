@@ -70,8 +70,6 @@ procedure TLVTApplication.StartupLogMemoryStorage;
 var
   w: TLogMemoryStorage;
 begin
-  if Assigned(Log) then
-    Log.Write('Now starting log memory storage...');
   w := TLogMemoryStorage.Create;
   GlobalLogManager.AddWriter(w);
   FLogMemory := w;

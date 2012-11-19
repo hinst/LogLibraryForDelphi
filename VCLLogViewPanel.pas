@@ -1,5 +1,8 @@
 unit VCLLogViewPanel;
 
+{ $DEFINE DEBUG_WRITELN_FILTER}
+{ $DEFINE DEBUG_WRITELN_REPAINT_STAGES}
+
 interface
 
 uses
@@ -28,9 +31,7 @@ uses
   DefaultLogEntity,
   EmptyLogEntity,
   LogMemoryStorage,
-  VCLLogViewPainter,
-
-  GlobalLogManagerUnit;
+  VCLLogViewPainter;
 
 type
   TLogViewPanel = class(TPanel)
@@ -95,7 +96,7 @@ type
     procedure Resize; override;
   public
     property Log: TEmptyLog read FLog;
-    property Storage: TLogMemoryStorage read FStorage write FStorage;
+    property LogMemory: TLogMemoryStorage read FStorage write FStorage;
     property UserLogMessageList: TCustomLogMessageList read GetUserLogMessageList;
     property PaintBox: TPaintBox read FPaintBox write FPaintBox;
     property Filter: TLogMessageTextFilter read FFilter write FFilter;
@@ -112,7 +113,7 @@ type
 
 implementation
 
-{$R ..\log-view-panel.RES}
+{$R log-view-panel.RES}
 
 constructor TLogViewPanel.Create(aOwner: TComponent);
 begin
@@ -122,13 +123,13 @@ end;
 function TLogViewPanel.GetUserLogMessageList: TCustomLogMessageList;
 begin
   result := nil;
-  AssertAssigned(Storage, 'Storage', TVariableType.Prop);
+  AssertAssigned(LogMemory, 'Storage', TVariableType.Prop);
   try
-    Storage.Lock;
-    AssertAssigned(Storage.List,' Storage.List', TVariableType.Prop);
-    result := CreateFiltered(FFilter.Filter, Storage.List);
+    LogMemory.Lock;
+    AssertAssigned(LogMemory.List,' Storage.List', TVariableType.Prop);
+    result := CreateFiltered(FFilter.Filter, LogMemory.List);
   finally
-    Storage.Unlock;
+    LogMemory.Unlock;
   end;
 end;
 
@@ -205,7 +206,7 @@ var
 begin
   DoubleBuffered := true;
   ShowHint := true;
-  FLog := TLog.Create(GlobalLogManager, 'LogViewPanel');
+  FLog := TEmptyLog.Create;
 
   FPaintPanel := TPanel.Create(self);
   FPaintPanel.Parent := self;
@@ -318,15 +319,29 @@ begin
 end;
 
 procedure TLogViewPanel.OnPaintBoxHandler(aSender: TObject);
+  procedure WriteLNRepaintStage(const s: string);
+    inline;
+  begin
+    {$IFDEF DEBUG_WRITELN_REPAINT_STAGES}
+    WriteLN(s);
+    {$ENDIF}
+  end;
+
 begin
   if FExceptionWhileDrawing then
     exit;
   try
+    WriteLNRepaintStage('PaintBackground...');
     PaintBackground;
+    WriteLNRepaintStage('PaintMessages...');
     PaintMessages;
+    WriteLNRepaintStage('UpdatePageBox...');
     UpdatePageBox;
+    WriteLNRepaintStage('PaintScrollLine...');
     PaintScrollLine;
+    WriteLNRepaintStage('PaintMessageNumbers...');
     PaintMessageNumbers;
+    WriteLNRepaintStage('Repaint stages complete.');
   except
     on e: Exception do
     begin
@@ -372,7 +387,6 @@ end;
 
 procedure TLogViewPanel.PaintScrollLine;
 var
-  lineLength: integer;
   canv: TCanvas;
 begin
   //WriteLN(FloatToStr(ScrollPosition) + '%');
@@ -452,14 +466,18 @@ end;
 
 procedure TLogViewPanel.UserApplyFilter(const aText: string);
 begin
+  {$IFDEF DEBUG_WRITELN_FILTER}
   WriteLN('Applying filter "' + aText + '"');
+  {$ENDIF}
   Filter.FilterText := aText;
   FPainter.List := UserLogMessageList;
   FPainter.Page := 0;
   FPainter.Top := 0;
   FPageSwitcher.Position := FPainter.Page;
   UpdatePageBox;
-  WriteLN(FPainter.List.Count);
+  {$IFDEF DEBUG_WRITELN_FILTER}
+  WriteLN('Filter passed: ' + IntToStr(FPainter.List.Count));
+  {$ENDIF}
   FPaintBox.Invalidate;
 end;
 
@@ -469,20 +487,20 @@ var
   i: integer;
   m: TCustomLogMessage;
 begin
-  AssertAssigned(Storage, 'Storage', TVariableType.Prop);
-  count := Storage.Count;
+  AssertAssigned(LogMemory, 'Storage', TVariableType.Prop);
+  count := LogMemory.Count;
   if FLastTimeMessageCount <> count then
   begin
     aInvalidateRequired := true;
-    Storage.Lock;
-    AssertAssigned(Storage.List, 'Storage.List', TVariableType.Prop);
+    LogMemory.Lock;
+    AssertAssigned(LogMemory.List, 'Storage.List', TVariableType.Prop);
     for i := FLastTimeMessageCount to count - 1 do
     begin
-      m := Storage.List[i];
+      m := LogMemory.List[i];
       if Filter.Filter(m) then
         FPainter.List.Add(m);
     end;
-    Storage.Unlock;
+    LogMemory.Unlock;
     FLastTimeMessageCount := count;
   end;
 end;
@@ -504,7 +522,7 @@ function TLogViewPanel.ReceiveMouseWheel(aShift: TShiftState; aWheelDelta: Integ
 begin
   result := true;
   // inherited DoMouseWheel(aShift, aWheelDelta, aMousePos);
-  // Log.Write(IntToStr(aWheelDelta)); // debug
+  // WriteLN(IntToStr(aWheelDelta)); // debug
   FPainter.DesiredTop := FPainter.DesiredTop + aWheelDelta;
   FPaintBox.Invalidate;
 end;

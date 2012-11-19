@@ -36,14 +36,14 @@ type
     FPage: integer;
     FTotalHeight: integer;
     FReverse: boolean;
-    procedure SetList(const aList: TCustomLogMessageList);
+    procedure SetList(const aList: TCustomLogMessageList); inline;
     function EnsureValidateTop(const aTop: integer): integer; override;
     function EmptyFilter(const aMessage: TCustomLogMessage): boolean;
-    function GetFilter: TCustomLogMessageFilterMethod;
-    procedure SetPage(const aPage: integer);
-    function GetMessageListStartIndex: integer;
-    function GetMessageListLastIndex: integer;
-    function GetPageCount: integer;
+    function GetFilter: TCustomLogMessageFilterMethod; inline;
+    procedure SetPage(const aPage: integer); inline;
+    function GetMessageListStartIndex: integer; inline;
+    function GetMessageListLastIndex: integer; inline;
+    function GetPageCount: integer; inline;
   public
       // owns the list
     property List: TCustomLogMessageList read FList write SetList;
@@ -81,6 +81,8 @@ begin
   result := inherited EnsureValidateTop(aTop);
   if result < - TotalHeight + FBox.Height then
     result := - TotalHeight + FBox.Height;
+  if TotalHeight < FBox.Height then
+    result := 0;
 end;
 
 function TLogMessageTextBoxPaint.EmptyFilter(const aMessage: TCustomLogMessage): boolean;
@@ -114,29 +116,43 @@ end;
 
 function TLogMessageTextBoxPaint.GetMessageListStartIndex: integer;
 begin
-  result := Page * PageSize;
-  if Reverse then
-    result := List.Count - 1 - result;
-  if result < 0 then
-    result := 0;
   AssertAssigned(List, 'List', TVariableType.Prop);
   LockPointer(List);
-  if result > List.Count - 1 then // exceeds
-    result := List.Count; // does not exists
+
+  result := Page * PageSize;
+  if not Reverse then
+  begin
+    if result > List.Count - 1 then // exceeds
+      result := List.Count; // exceeds
+  end
+  else
+  begin
+    result := List.Count - 1 - result;
+    if result < 0 then // exceeds
+      result := -1; // exceeds
+  end;
+  
   UnlockPointer(List);
 end;
 
 function TLogMessageTextBoxPaint.GetMessageListLastIndex: integer;
 begin
-  result := (Page + 1) * PageSize;
-  if Reverse then
-    result := List.Count - 1 - result;  
-  if result < 0 then
-    result := 0;
   AssertAssigned(List, 'List', TVariableType.Prop);
   LockPointer(List);
-  if result > List.Count - 1 then // exceeds
-    result := List.Count - 1; // exists
+
+  result := (Page + 1) * PageSize;
+  if not Reverse then
+  begin
+    if result > List.Count - 1 then // exceeds
+      result := List.Count - 1; // exists
+  end
+  else
+  begin
+    result := List.Count - 1 - result;
+    if result < 0 then //exceeds
+      result := 0; // exists
+  end;
+  
   UnlockPointer(List);
 end;
 
@@ -161,7 +177,10 @@ var
 begin
   CurrentHeight := CurrentHeight + InnerTextGap;
   AppendDraw(
-    '#' + IntToStr(aMessage.Number) + ' "' + aMessage.Name + '" [' + aMessage.Tag + ']',
+    '# ' + IntToStr(aMessage.Number)
+    + ' at ' + DateTimeToStr(aMessage.Time)
+    + ' [' + aMessage.Tag + ']'
+    + ' "' + aMessage.Name + '"',
     clBlue,
     aDraw
   );

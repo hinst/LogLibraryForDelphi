@@ -1,5 +1,7 @@
 ﻿unit CustomLogMessageFilter;
 
+{ $DEFINE DEBUG_WRITELN_CUSTOM_LOG_MESSAGE_FILTER_APPLY}
+
 interface
 
 uses
@@ -66,7 +68,9 @@ begin
     if not ContainsText(aText, FRequired[i]) then
     begin
       result := false;
+      {$IFDEF DEBUG_WRITELN_CUSTOM_LOG_MESSAGE_FILTER_APPLY}
       WriteLN(aText, ', ', FRequired[i], ', ', result);
+      {$ENDIF}
       break;
     end;
 end;
@@ -99,8 +103,6 @@ begin
 end;
 
 procedure TLogMessageTextFilter.ExtractNegative;
-var
-  i: integer;
 begin
   FreeAndNil(FNegative);
   FNegative := CreateExtractStrings(FRequired, CheckExtractNegative);
