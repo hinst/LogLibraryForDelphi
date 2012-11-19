@@ -5,7 +5,7 @@ interface
 uses
   SysUtils,
 
-  ExceptionTracer, 
+  UExceptionTracer, 
 
   CustomLogMessage,
   CustomLogWriter,
