@@ -68,7 +68,6 @@ type
     FExceptionWhileDrawing: boolean;
     FLastTimeMessageCount: integer;
     FFilter: TLogMessageTextFilter;
-    FVerticalFont: TFont;
     function GetUserLogMessageList: TCustomLogMessageList;
     function GetScrollPosition: single;
     procedure SetScrollPosition(const aValue: single);
@@ -121,15 +120,18 @@ begin
 end;
 
 function TLogViewPanel.GetUserLogMessageList: TCustomLogMessageList;
+var
+  count: integer;
 begin
   result := nil;
   AssertAssigned(LogMemory, 'Storage', TVariableType.Prop);
   try
-    LogMemory.Lock;
     AssertAssigned(LogMemory.List,' Storage.List', TVariableType.Prop);
-    result := CreateFiltered(FFilter.Filter, LogMemory.List);
-  finally
+    LogMemory.Lock;
+    count := LogMemory.List.Count;
     LogMemory.Unlock;
+    result := CreateFiltered(FFilter.Filter, LogMemory.List, count);
+  finally
   end;
 end;
 
@@ -217,6 +219,8 @@ begin
   FPaintBox.Parent := FPaintPanel;
   FPaintBox.Align := alClient;
   FPaintBox.OnPaint := OnPaintBoxHandler;
+  FPaintBox.Canvas.Font.Name := 'Courier';
+  FPaintBox.Canvas.Font.Size:= 20;
 
   FBottomPanel := TPanel.Create(self);
   FBottomPanel.Parent := self;
@@ -488,7 +492,9 @@ var
   m: TCustomLogMessage;
 begin
   AssertAssigned(LogMemory, 'Storage', TVariableType.Prop);
+  LogMemory.Lock;
   count := LogMemory.Count;
+  LogMemory.Unlock;
   if FLastTimeMessageCount <> count then
   begin
     aInvalidateRequired := true;

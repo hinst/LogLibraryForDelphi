@@ -10,7 +10,7 @@ uses
   CustomLogMessageList;
 
 function CreateFiltered(const aFilter: TCustomLogMessageFilterMethod;
-  const aSource: TCustomLogMessageList): TCustomLogMessageList;
+  const aSource: TCustomLogMessageList; const aCount: integer): TCustomLogMessageList;
 
 procedure AddFiltered(const aDestination: TCustomLogMessageList;
   const aFilter: TCustomLogMessageFilterMethod; const aSource: TCustomLogMessageList);
@@ -19,7 +19,7 @@ procedure AddFiltered(const aDestination: TCustomLogMessageList;
 implementation
 
 function CreateFiltered(const aFilter: TCustomLogMessageFilterMethod;
-  const aSource: TCustomLogMessageList): TCustomLogMessageList;
+  const aSource: TCustomLogMessageList; const aCount: integer): TCustomLogMessageList;
 begin
   result := TCustomLogMessageList.Create;
   AddFiltered(result, aFilter, aSource);
