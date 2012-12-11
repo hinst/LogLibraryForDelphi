@@ -1,4 +1,4 @@
-unit EmptyLogEntity;
+﻿unit EmptyLogEntity;
 
 interface
 
@@ -34,12 +34,11 @@ end;
 
 procedure ReplaceLog(var aLog: TEmptyLog; const aNewLog: TEmptyLog);
 begin
-  if aLog <> nil then
+  if aNewLog <> nil then
+  begin
     FreeAndNil(aLog);
-  if aNewLog  <> nil then
-    aLog := aNewLog
-  else
-    aLog := TEmptyLog.Create;
+    aLog := aNewLog;
+  end;
 end;
 
 end.
