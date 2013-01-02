@@ -11,6 +11,7 @@ uses
   Classes,
   Math,
   Graphics,
+  Forms,
   Controls,
   ExtCtrls,
   ComCtrls,
@@ -48,12 +49,13 @@ type
     DefaultScrollLineWidth = 5;
     DefaultPageBoxWidth = 100;
     DefaultReverseViewCaption = 'Reverse view';
+    DefaultLogFont: array[0..2] of String = ('Consolas', 'Courier', 'Courier New');
+    DefaultLogFontSize: array[0..2] of Integer = (10, 10, 10);
   protected
     FLog: TEmptyLog;
     FDesiredScrollPosition: single;
     FStorage: TLogMemoryStorage;
     FReverse: boolean;
-
     {$REGION Visual items}
     FPaintPanel: TPanel;
     FPaintBox: TPaintBox;
@@ -77,6 +79,7 @@ type
     function GetScrollLineYBottom: integer;
     function GetEffectiveHeight: integer;
     procedure CreateThis;
+    procedure SetDefaultLogFont;
     procedure PanelUpdateCycle(aSender: TObject);
     procedure OnPaintBoxHandler(aSender: TObject);
     procedure PaintBackground; inline;
@@ -219,8 +222,7 @@ begin
   FPaintBox.Parent := FPaintPanel;
   FPaintBox.Align := alClient;
   FPaintBox.OnPaint := OnPaintBoxHandler;
-  FPaintBox.Canvas.Font.Name := 'Courier';
-  FPaintBox.Canvas.Font.Size:= 20;
+  SetDefaultLogFont;
 
   FBottomPanel := TPanel.Create(self);
   FBottomPanel.Parent := self;
@@ -297,6 +299,23 @@ begin
   FLastTimeMessageCount := FPainter.List.Count;
 
   FExceptionWhileDrawing := false;
+end;
+
+procedure TLogViewPanel.SetDefaultLogFont;
+var
+  i: integer;
+  currentFontName: string;
+begin
+  for i := 0 to length(DefaultLogFont) - 1 do
+  begin
+    currentFontName := DefaultLogFont[i];
+    if Screen.Fonts.IndexOf(currentFontName) >= 0 then
+    begin
+      FPaintBox.Font.Name := currentFontName;
+      FPaintBox.Font.Size := DefaultLogFontSize[i];
+      break;
+    end;
+  end;
 end;
 
 procedure TLogViewPanel.PanelUpdateCycle(aSender: TObject);
