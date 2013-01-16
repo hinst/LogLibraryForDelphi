@@ -193,7 +193,7 @@ begin
   begin
     canv := FBox.Canvas;
     canv.Pen.Style := psSolid;
-    canv.Pen.Color := clBlack;
+    canv.Pen.Color := clGray;
     canv.Pen.Width := 1;
     canv.MoveTo(LeftGap, Top + CurrentHeight);
     canv.LineTo(FBox.Width - RightGap, Top + CurrentHeight );

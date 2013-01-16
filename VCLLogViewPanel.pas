@@ -39,7 +39,7 @@ type
   public
     constructor Create(aOwner: TComponent); override;
   public const
-    DefaultUpdateInterval = 90;
+    DefaultUpdateInterval = 35;
     DefaultPageSize = 100;
     DefaultBottomPanelHeight = 32;
     DefaultLeftGap = 2;

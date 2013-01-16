@@ -25,7 +25,11 @@ package LogLibrary4Delphi;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl;
+  RTL,
+  JCL,
+  JCLContainers,
+  VCL,
+  Units4Delphi;
 
 contains
   CustomLogEntity in 'CustomLogEntity.pas',
@@ -53,7 +57,5 @@ contains
   ULogTest in 'ULogTest.pas',
   CustomLogMessageFilter in 'CustomLogMessageFilter.pas',
   UCustomLogMessageListFilter in 'UCustomLogMessageListFilter.pas';
-
-FileLogWriter in 'FileLogWriter.pas';
 
 end.
